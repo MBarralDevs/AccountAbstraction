@@ -10,6 +10,7 @@ contract HelperConfig is Script {
     //STRUCTS
     struct NetworkConfig {
         address entryPoint;
+        address account;
     }
 
     //VARIABLES
@@ -20,6 +21,7 @@ contract HelperConfig is Script {
     uint256 constant ZKSYNC_MAINNET_CHAIN_ID = 324;
     uint256 constant LOCAL_CHAIN_ID = 31337;
     address constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address constant BURNER_WALLET = 0x8ffA18f05056458dbFB2f7A122F185878B2d6e2f;
 
     NetworkConfig public localNetworkConfig;
     mapping(uint256 chainId => NetworkConfig) public networkConfigs;
@@ -43,11 +45,11 @@ contract HelperConfig is Script {
     }
 
     function getEthSepoliaConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789});
+        return NetworkConfig({entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789, account: BURNER_WALLET});
     }
 
     function getZkSyncSepoliaConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({entryPoint: address(0)});
+        return NetworkConfig({entryPoint: address(0), account: BURNER_WALLET});
     }
 
     function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
@@ -56,5 +58,8 @@ contract HelperConfig is Script {
         }
 
         //Deploy a mock entry point contract
+
+        localNetworkConfig = NetworkConfig({entryPoint: address(0), account: ANVIL_DEFAULT_ACCOUNT});
+        return localNetworkConfig;
     }
 }
