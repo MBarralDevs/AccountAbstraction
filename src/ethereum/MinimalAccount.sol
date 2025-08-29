@@ -13,6 +13,8 @@ contract MinimalAccount is IAccount, Ownable {
     //ERRORS
     error MinimalAccount__PrefundFailed();
     error MinimalAccount__NotFromEntryPoint();
+    error MinimalAccount__NotFromEntryPointOrOwner();
+    error MinimalAccount__CallFailed(bytes);
 
     //VARIABLES
     IEntryPoint private immutable i_entryPoint;
@@ -25,9 +27,26 @@ contract MinimalAccount is IAccount, Ownable {
         _;
     }
 
+    modifier requireFromEntryPointOrOwner() {
+        if (msg.sender != address(i_entryPoint) && msg.sender != owner()) {
+            revert MinimalAccount__NotFromEntryPointOrOwner();
+        }
+        _;
+    }
+
     //CONSTRUCTOR
     constructor(address entryPoint) Ownable(msg.sender) {
         i_entryPoint = IEntryPoint(entryPoint);
+    }
+
+    receive() external payable {}
+
+    //FUNCTIONS
+    function execute(address target, uint256 value, bytes calldata data) external requireFromEntryPointOrOwner {
+        (bool success, bytes memory result) = target.call{value: value}(data);
+        if (!success) {
+            revert MinimalAccount__CallFailed(result);
+        }
     }
 
     function validateUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
