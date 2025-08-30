@@ -6,6 +6,7 @@ import {MinimalAccount} from "../../src/ethereum/MinimalAccount.sol";
 import {DeployMinimal} from "../../script/DeployMinimal.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {ERC20Mock} from "lib/openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
+import {SendPackedUserOp} from "../../script/SendPackedUserOp.s.sol";
 
 contract MinimalAccountTest is Test {
     MinimalAccount minimalAccount;
@@ -45,5 +46,17 @@ contract MinimalAccountTest is Test {
         vm.prank(randomUser);
         vm.expectRevert(MinimalAccount.MinimalAccount__NotFromEntryPointOrOwner.selector);
         minimalAccount.execute(dest, value, data);
+    }
+
+    function testRecoverSignedOp() public view {
+        //Arrange
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        bytes memory data = abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), AMOUNT_TO_MINT);
+        bytes memory executeCallData = abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, data);
+        //Act
+
+        //Assert
     }
 }
