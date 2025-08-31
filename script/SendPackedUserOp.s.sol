@@ -14,6 +14,7 @@ contract SendPackedUserOp is Script {
     //calling our unsigned packed user op to then sign it
     function generatePackedUserOp(bytes memory callData, HelperConfig.NetworkConfig memory config)
         public
+        view
         returns (PackedUserOperation memory)
     {
         //Generate unsigned data
@@ -25,14 +26,24 @@ contract SendPackedUserOp is Script {
         bytes32 digest = MessageHashUtils.toEthSignedMessageHash(userOpHash);
 
         //Sign the hash
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(config.account, digest);
-        userOp.signature = abi.encodePacked(r, s, v);
+        // 3. Sign it
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        uint256 ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+        if (block.chainid == 31337) {
+            (v, r, s) = vm.sign(ANVIL_DEFAULT_KEY, digest);
+        } else {
+            (v, r, s) = vm.sign(config.account, digest);
+        }
+        userOp.signature = abi.encodePacked(r, s, v); // Note the order
         return userOp;
     }
 
     //Generating unsigned "PackedUserOperation" in a first time to be signed after
     function _generateUnsignedPackedUserOp(bytes memory callData, address sender, uint256 nonce)
         internal
+        pure
         returns (PackedUserOperation memory)
     {
         uint128 verificationGasLimit = 16777216;
