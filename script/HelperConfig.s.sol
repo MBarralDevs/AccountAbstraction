@@ -12,6 +12,7 @@ contract HelperConfig is Script {
     //STRUCTS
     struct NetworkConfig {
         address entryPoint;
+        address usdc;
         address account;
     }
 
@@ -30,6 +31,9 @@ contract HelperConfig is Script {
 
     constructor() {
         networkConfigs[ETH_SEPOLIA_CHAIN_ID] = getEthSepoliaConfig();
+        networkConfigs[ETH_MAINNET_CHAIN_ID] = getEthMainnetConfig();
+        networkConfigs[ZKSYNC_MAINNET_CHAIN_ID] = getZkSyncConfig();
+        networkConfigs[ARBITRUM_MAINNET_CHAIN_ID] = getArbMainnetConfig();
     }
 
     function getConfig() public returns (NetworkConfig memory) {
@@ -46,12 +50,46 @@ contract HelperConfig is Script {
         }
     }
 
+    function getEthMainnetConfig() public pure returns (NetworkConfig memory) {
+        // This is v7
+        return NetworkConfig({
+            entryPoint: 0x0000000071727De22E5E9d8BAf0edAc6f37da032,
+            usdc: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
+            account: BURNER_WALLET
+        });
+        // https://blockscan.com/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032
+    }
+
     function getEthSepoliaConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789, account: BURNER_WALLET});
+        return NetworkConfig({
+            entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789,
+            usdc: 0xc015Efb1CB95543687f46aEDB1fe062627B893B4, // Update with your own mock token
+            account: BURNER_WALLET
+        });
+    }
+
+    function getArbMainnetConfig() public pure returns (NetworkConfig memory) {
+        return NetworkConfig({
+            entryPoint: 0x0000000071727De22E5E9d8BAf0edAc6f37da032,
+            usdc: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831,
+            account: BURNER_WALLET
+        });
     }
 
     function getZkSyncSepoliaConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({entryPoint: address(0), account: BURNER_WALLET});
+        return NetworkConfig({
+            entryPoint: address(0), // There is no entrypoint in zkSync!
+            usdc: 0x5A7d6b2F92C77FAD6CCaBd7EE0624E64907Eaf3E, // not the real USDC on zksync sepolia
+            account: BURNER_WALLET
+        });
+    }
+
+    function getZkSyncConfig() public pure returns (NetworkConfig memory) {
+        return NetworkConfig({
+            entryPoint: address(0), // supports native AA, so no entry point needed
+            usdc: 0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4,
+            account: BURNER_WALLET
+        });
     }
 
     function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
@@ -62,10 +100,11 @@ contract HelperConfig is Script {
         //Deploy a mock entry point contract
         vm.startBroadcast(ANVIL_DEFAULT_ACCOUNT);
         EntryPoint entryPoint = new EntryPoint();
-        // ERC20Mock erc20Mock = new ERC20Mock();
+        ERC20Mock erc20Mock = new ERC20Mock();
         vm.stopBroadcast();
 
-        localNetworkConfig = NetworkConfig({entryPoint: address(entryPoint), account: ANVIL_DEFAULT_ACCOUNT});
+        localNetworkConfig =
+            NetworkConfig({entryPoint: address(entryPoint), usdc: address(erc20Mock), account: ANVIL_DEFAULT_ACCOUNT});
         return localNetworkConfig;
     }
 }
