@@ -11,6 +11,9 @@
   "lib/foundry-devops": {
     "rev": "df9f90b"
   },
+  "lib/foundry-era-contracts": {
+    "rev": "3f99de4"
+  },
   "lib/openzeppelin-contracts": {
     "rev": "dbb6104"
   }
