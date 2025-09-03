@@ -1,13 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IAccount} from "lib/foundry-era-contracts/src/system-contracts/contracts/interfaces/IAccount.sol";
-import {Transaction} from
-    "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/MemoryTransactionHelper.sol";
+import {
+    IAccount,
+    ACCOUNT_VALIDATION_SUCCESS_MAGIC
+} from "lib/foundry-era-contracts/src/system-contracts/contracts/interfaces/IAccount.sol";
+import {
+    Transaction,
+    MemoryTransactionHelper
+} from "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/MemoryTransactionHelper.sol";
 import {SystemContractsCaller} from
     "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/SystemContractsCaller.sol";
-import {NONCE_HOLDER_SYSTEM_CONTRACT} from "lib/foundry-era-contracts/src/system-contracts/contracts/Constants.sol";
+import {
+    NONCE_HOLDER_SYSTEM_CONTRACT,
+    BOOTLOADER_FORMAL_ADDRESS
+} from "lib/foundry-era-contracts/src/system-contracts/contracts/Constants.sol";
 import {INonceHolder} from "lib/foundry-era-contracts/src/system-contracts/contracts/interfaces/INonceHolder.sol";
+import {ECDSA} from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /**
  * Lifecycle of a type 113 (0x71) transaction
@@ -26,16 +36,35 @@ import {INonceHolder} from "lib/foundry-era-contracts/src/system-contracts/contr
  * 8. The main node calls executeTransaction
  * 9. If a paymaster was used, the postTransaction is called
  */
-contract ZkMinimalAccount is IAccount {
+contract ZkMinimalAccount is IAccount, Ownable {
+    //LIBRAIRIES
+    using MemoryTransactionHelper for Transaction;
+
+    //ERRORS
+    error ZkMinimalAccount__NotEnoughBalance(uint256 available, uint256 required);
+    error ZkMinimalAccount__NotFromBootLoader();
+
+    //MODIFIERS
+    modifier onlyBootLoader() {
+        if (msg.sender != BOOTLOADER_FORMAL_ADDRESS) {
+            revert ZkMinimalAccount__NotFromBootLoader();
+        }
+        _;
+    }
+
+    //CONSTRUCTOR
+    constructor() Ownable(msg.sender) {}
+
     //EXTERNAL FUNCTIONS
     /**
      * @notice Must increase the nonce
      * @notice Must validate the transaction (check the owner signe the Tx)
      * @notice Must check if enough balance is present for the transaction
      */
-    function validateTransaction(bytes32 _txHash, bytes32 _suggestedSignedHash, Transaction memory _transaction)
+    function validateTransaction(bytes32, /*_txHash*/ bytes32, /*_suggestedSignedHash*/ Transaction memory _transaction)
         external
         payable
+        onlyBootLoader
         returns (bytes4 magic)
     {
         //Increment the nonce via System Call Simulation
@@ -47,10 +76,23 @@ contract ZkMinimalAccount is IAccount {
         );
 
         //Check for fee to pay
+        uint256 totalRequiredBalance = _transaction.totalRequiredBalance();
+        if (address(this).balance < totalRequiredBalance) {
+            revert ZkMinimalAccount__NotEnoughBalance(address(this).balance, totalRequiredBalance);
+        }
 
         //Check signature
+        bytes32 txHash = _transaction.encodeHash();
+        address signer = ECDSA.recover(txHash, _transaction.signature);
+        bool isValidSigner = signer == owner();
+        if (isValidSigner) {
+            magic = ACCOUNT_VALIDATION_SUCCESS_MAGIC;
+        } else {
+            magic = bytes4(0);
+        }
 
         //Return magic value
+        return magic;
     }
 
     function executeTransaction(bytes32 _txHash, bytes32 _suggestedSignedHash, Transaction memory _transaction)
