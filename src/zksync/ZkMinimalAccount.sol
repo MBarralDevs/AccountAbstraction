@@ -107,6 +107,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
         return magic;
     }
 
+    //Execute the transaction
     function executeTransaction(bytes32, /*_txHash*/ bytes32, /*_suggestedSignedHash*/ Transaction memory _transaction)
         external
         payable
@@ -132,6 +133,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
 
     function executeTransactionFromOutside(Transaction memory _transaction) external payable {}
 
+    //Pay for transcation using payToTheBootloader() function
     function payForTransaction(bytes32, /*_txHash*/ bytes32, /*_suggestedSignedHash*/ Transaction memory _transaction)
         external
         payable
