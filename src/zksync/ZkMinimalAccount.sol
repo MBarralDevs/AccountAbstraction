@@ -48,6 +48,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
     error ZkMinimalAccount__ExecutionFailed();
     error ZkMinimalAccount__NotFromBootLoaderOrOwner();
     error ZkMinimalAccount__FailToPayBootloader();
+    error ZkMinimalAccount__InvalidSignature();
 
     //MODIFIERS
     modifier onlyBootLoader() {
@@ -88,25 +89,16 @@ contract ZkMinimalAccount is IAccount, Ownable {
         payable
         onlyBootLoaderAndOwner
     {
-        address to = address(uint160(_transaction.to));
-        uint128 value = Utils.safeCastToU128(_transaction.value);
-        bytes memory data = _transaction.data;
-
-        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
-            uint32 gas = Utils.safeCastToU32(gasleft());
-            SystemContractsCaller.systemCallWithPropagatedRevert(gas, to, value, data);
-        } else {
-            bool success;
-            assembly {
-                success := call(gas(), to, value, add(data, 0x20), mload(data), 0, 0)
-            }
-            if (!success) {
-                revert ZkMinimalAccount__ExecutionFailed();
-            }
-        }
+        _executeTransaction(_transaction);
     }
 
-    function executeTransactionFromOutside(Transaction memory _transaction) external payable {}
+    function executeTransactionFromOutside(Transaction memory _transaction) external payable {
+        bytes4 magic = _validateTransaction(_transaction);
+        if (magic != ACCOUNT_VALIDATION_SUCCESS_MAGIC) {
+            revert ZkMinimalAccount__InvalidSignature();
+        }
+        _executeTransaction(_transaction);
+    }
 
     //Pay for transcation using payToTheBootloader() function
     function payForTransaction(bytes32, /*_txHash*/ bytes32, /*_suggestedSignedHash*/ Transaction memory _transaction)
@@ -153,5 +145,24 @@ contract ZkMinimalAccount is IAccount, Ownable {
 
         //Return magic value
         return magic;
+    }
+
+    function _executeTransaction(Transaction memory _transaction) internal {
+        address to = address(uint160(_transaction.to));
+        uint128 value = Utils.safeCastToU128(_transaction.value);
+        bytes memory data = _transaction.data;
+
+        if (to == address(DEPLOYER_SYSTEM_CONTRACT)) {
+            uint32 gas = Utils.safeCastToU32(gasleft());
+            SystemContractsCaller.systemCallWithPropagatedRevert(gas, to, value, data);
+        } else {
+            bool success;
+            assembly {
+                success := call(gas(), to, value, add(data, 0x20), mload(data), 0, 0)
+            }
+            if (!success) {
+                revert ZkMinimalAccount__ExecutionFailed();
+            }
+        }
     }
 }
