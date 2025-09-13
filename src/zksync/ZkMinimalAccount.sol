@@ -68,6 +68,8 @@ contract ZkMinimalAccount is IAccount, Ownable {
     //CONSTRUCTOR
     constructor() Ownable(msg.sender) {}
 
+    receive() external payable {}
+
     //EXTERNAL FUNCTIONS
     /**
      * @notice Must increase the nonce
