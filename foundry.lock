@@ -16,5 +16,8 @@
   },
   "lib/openzeppelin-contracts": {
     "rev": "dbb6104"
+  },
+  "lib/solx": {
+    "rev": "c6aedce5cd0f9037cfcd684dd9295ffb0553c82e"
   }
 }

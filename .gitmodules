@@ -13,3 +13,6 @@
 [submodule "lib/foundry-era-contracts"]
 	path = lib/foundry-era-contracts
 	url = https://github.com/Cyfrin/foundry-era-contracts
+[submodule "lib/solx"]
+	path = lib/solx
+	url = https://github.com/matter-labs/solx
