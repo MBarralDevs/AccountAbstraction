@@ -12,6 +12,8 @@ contract ZkMinimalAccountTest is Test {
     ZkMinimalAccount zkMinimalAccount;
     ERC20Mock usdc;
 
+    bytes32 constant EMPTY_BYTES32 = bytes32(0);
+
     //CONSTANTS
     uint256 constant AMOUNT_TO_MINT = 1e18;
 
@@ -26,9 +28,14 @@ contract ZkMinimalAccountTest is Test {
         uint256 value = 0;
         bytes memory data = abi.encodeWithSelector(ERC20Mock.mint.selector, address(zkMinimalAccount), AMOUNT_TO_MINT);
 
+        Transaction memory unsignedTx = _createUnsignedTransaction(address(zkMinimalAccount), 113, dest, value, data);
+
         //Act
+        vm.prank(zkMinimalAccount.owner());
+        zkMinimalAccount.executeTransaction(EMPTY_BYTES32, EMPTY_BYTES32, unsignedTx);
 
         //Assert
+        assertEq(usdc.balanceOf(address(zkMinimalAccount)), AMOUNT_TO_MINT);
     }
 
     //HELPER FUNCTIONS
