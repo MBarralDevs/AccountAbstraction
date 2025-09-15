@@ -29,6 +29,7 @@ contract ZkMinimalAccountTest is Test {
         zkMinimalAccount = new ZkMinimalAccount();
         usdc = new ERC20Mock();
         zkMinimalAccount.transferOwnership(ANVIL_DEFAULT_ACCOUNT);
+        vm.deal(address(zkMinimalAccount), AMOUNT_TO_MINT);
     }
 
     function testZkOwnerCanExecuteCommands() public {

@@ -6,6 +6,7 @@ is-system = true
 viaIR = true
 optimizer = true
 optimizer_runs = 200
+system-mode = true
 
 [profile.solx]
 solc_version = "/home/mbarr/.local/bin/solx"
