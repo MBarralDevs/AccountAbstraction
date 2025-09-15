@@ -9,6 +9,9 @@ import {
     MemoryTransactionHelper
 } from "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/MemoryTransactionHelper.sol";
 import {MessageHashUtils} from "lib/openzeppelin-contracts/contracts/utils/cryptography/MessageHashUtils.sol";
+import {BOOTLOADER_FORMAL_ADDRESS} from "lib/foundry-era-contracts/src/system-contracts/contracts/Constants.sol";
+import {ACCOUNT_VALIDATION_SUCCESS_MAGIC} from
+    "lib/foundry-era-contracts/src/system-contracts/contracts/interfaces/IAccount.sol";
 
 contract ZkMinimalAccountTest is Test {
     using MessageHashUtils for bytes32;
@@ -50,10 +53,17 @@ contract ZkMinimalAccountTest is Test {
         uint256 value = 0;
         bytes memory data = abi.encodeWithSelector(ERC20Mock.mint.selector, address(zkMinimalAccount), AMOUNT_TO_MINT);
 
+        //Getting the unsigned 113 transaction
         Transaction memory unsignedTx = _createUnsignedTransaction(address(zkMinimalAccount), 113, dest, value, data);
+        //Signing the transaction
+        Transaction memory signedTx = _signTransaction(unsignedTx);
+
         //Act
+        vm.prank(BOOTLOADER_FORMAL_ADDRESS);
+        bytes4 magic = zkMinimalAccount.validateTransaction(EMPTY_BYTES32, EMPTY_BYTES32, signedTx);
 
         //Assert
+        assertEq(magic, ACCOUNT_VALIDATION_SUCCESS_MAGIC);
     }
 
     //HELPER FUNCTIONS
