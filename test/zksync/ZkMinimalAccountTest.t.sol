@@ -4,22 +4,28 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {ZkMinimalAccount} from "../../src/zksync/ZkMinimalAccount.sol";
 import {ERC20Mock} from "lib/openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
-import {Transaction} from
-    "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/MemoryTransactionHelper.sol";
+import {
+    Transaction,
+    MemoryTransactionHelper
+} from "lib/foundry-era-contracts/src/system-contracts/contracts/libraries/MemoryTransactionHelper.sol";
+import {MessageHashUtils} from "lib/openzeppelin-contracts/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract ZkMinimalAccountTest is Test {
+    using MessageHashUtils for bytes32;
     //VARIABLES
+
     ZkMinimalAccount zkMinimalAccount;
     ERC20Mock usdc;
 
-    bytes32 constant EMPTY_BYTES32 = bytes32(0);
-
     //CONSTANTS
     uint256 constant AMOUNT_TO_MINT = 1e18;
+    address constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    bytes32 constant EMPTY_BYTES32 = bytes32(0);
 
     function setUp() public {
         zkMinimalAccount = new ZkMinimalAccount();
         usdc = new ERC20Mock();
+        zkMinimalAccount.transferOwnership(ANVIL_DEFAULT_ACCOUNT);
     }
 
     function testZkOwnerCanExecuteCommands() public {
@@ -38,7 +44,30 @@ contract ZkMinimalAccountTest is Test {
         assertEq(usdc.balanceOf(address(zkMinimalAccount)), AMOUNT_TO_MINT);
     }
 
+    function testZkValidateTransaction() public {
+        //Arrange
+        address dest = address(usdc);
+        uint256 value = 0;
+        bytes memory data = abi.encodeWithSelector(ERC20Mock.mint.selector, address(zkMinimalAccount), AMOUNT_TO_MINT);
+
+        Transaction memory unsignedTx = _createUnsignedTransaction(address(zkMinimalAccount), 113, dest, value, data);
+        //Act
+
+        //Assert
+    }
+
     //HELPER FUNCTIONS
+    function _signTransaction(Transaction memory transaction) internal {
+        bytes32 unsignedTxHash = MemoryTransactionHelper.encodeHash(transaction);
+
+        //We are signing the txHash
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        uint256 ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+        (v, r, s) = vm.sign(ANVIL_DEFAULT_KEY, unsignedTxHash);
+    }
+
     function _createUnsignedTransaction(
         address from,
         uint8 transactionType,
