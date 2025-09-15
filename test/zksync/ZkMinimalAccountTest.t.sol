@@ -57,7 +57,7 @@ contract ZkMinimalAccountTest is Test {
     }
 
     //HELPER FUNCTIONS
-    function _signTransaction(Transaction memory transaction) internal {
+    function _signTransaction(Transaction memory transaction) internal view returns (Transaction memory) {
         bytes32 unsignedTxHash = MemoryTransactionHelper.encodeHash(transaction);
 
         //We are signing the txHash
@@ -66,6 +66,11 @@ contract ZkMinimalAccountTest is Test {
         bytes32 s;
         uint256 ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         (v, r, s) = vm.sign(ANVIL_DEFAULT_KEY, unsignedTxHash);
+        //Setting up the transaction struct with the signature
+        Transaction memory signedTx = transaction;
+        signedTx.signature = abi.encodePacked(r, s, v);
+        //Return the signed transaction
+        return signedTx;
     }
 
     function _createUnsignedTransaction(
